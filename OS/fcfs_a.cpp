@@ -15,32 +15,15 @@ struct track{
     string p_name;
 };
 bool process_comparator(process a,process b);
+void read_input(vector<process> &processes,int &n);
+void gantt_chart(vector <track>tracks);
+void time_calc(vector<track> tracks,vector<process> &processes);
 int main(){
-    int n,i,j;
-    freopen("input.txt","r",stdin);
-    cin>>n;
+    int n,i;
     vector<process> processes;
     vector<track> tracks;
-    process a;
-    for(i=0;i<n;i++){
-        string s;
-        cin>>s;
-        a.p_name=s;
-        int x;
-        cin>>x;
-        a.burst_time=x;
-        cin>>x;
-        a.priority=x;
-        cin>>x;
-        a.arrival_time=x;
-        a.ta_time=0;
-        a.waiting_time=0;
-        processes.push_back(a);
-    }
+    read_input(processes,n);
     sort(processes.begin(),processes.end(),process_comparator);
-    for(i=0;i<n;i++){
-        cout<<processes[i].p_name<<" ";
-    }
     cout<<endl;
     int time=0;
     for(auto &p : processes){
@@ -70,20 +53,66 @@ int main(){
             tracks.push_back(y);
         }
     }
-    printf("|");
-    for(auto r:tracks){
-        printf("----%s----|",r.p_name.c_str());
+   gantt_chart(tracks);
+       cout<<endl<<endl;
+    cout<<"Average TurnAround Time: "<<endl;
+    double avg_tat=0;
+    for(i=0;i<n;i++){
+        avg_tat+=processes[i].ta_time;
     }
-    cout<<endl;
-    printf("%-11d",0);
-    for(auto r:tracks){
-        printf("%-11d",r.end_time);
+    cout<<avg_tat/n<<endl;
+    cout<<"Average Waiting Time: "<<endl;
+    double avg_wat=0;
+    for(i=0;i<n;i++){
+        avg_wat+=processes[i].waiting_time;
     }
-    cout<<endl<<endl;
+    cout<<avg_wat/n<<endl;
 }
 bool process_comparator(process a,process b){
     if(a.arrival_time==b.arrival_time){
-        return a.burst_time<b.burst_time;
+        return a.p_name[1]<b.p_name[1];
     }
     return a.arrival_time<b.arrival_time;
+}
+void read_input(vector<process> &processes, int &n){
+        int i;
+    freopen("input.txt","r",stdin);
+    cin>>n;
+    
+    process a;
+    for(i=0;i<n;i++){
+        string s;
+        cin>>s;
+        a.p_name=s;
+        int x;
+        cin>>x;
+        a.burst_time=x;
+        cin>>x;
+        a.priority=x;
+        cin>>x;
+        a.arrival_time=x;
+        a.ta_time=0;
+        a.waiting_time=0;
+        processes.push_back(a);
+    }
+}
+void gantt_chart(vector <track>tracks){
+    printf("|");
+    for(auto x: tracks)printf("----%s----|",x.p_name.c_str());
+    cout<<endl;
+    printf("%-11d",0);
+    for(auto x: tracks)printf("%-11d",x.end_time);
+}
+void time_calc(vector<track> tracks,vector<process> &processes){
+    for(auto x : tracks ){
+        if(x.p_name!="NP"){
+            for(auto &p : processes){
+                if(x.p_name==p.p_name){
+                p.ta_time=x.end_time-p.arrival_time;
+                p.waiting_time=p.ta_time-p.burst_time;
+                //cout<<p.p_name<<" :"<<p.ta_time<<endl;
+            }
+        }
+        }
+    }
 }
