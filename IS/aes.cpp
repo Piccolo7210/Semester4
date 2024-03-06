@@ -4,7 +4,7 @@ using namespace std ;
 #define roundNumber 10
 #define paddingCharacter '$'
 
-unsigned char key[] = "ShaikhulIslam" ;
+unsigned char key[] = "abcdefghijklmnop" ;
 int extendedLen = 16 ;
 string mess ;
 void substitutionWord( unsigned char* input ) ;
