@@ -6,7 +6,7 @@ using namespace std ;
 
 unsigned char key[] = "abcdefghijklmnop" ;
 int extendedLen = 16 ;
-string mess ;
+string Cipher_text ;
 void substitutionWord( unsigned char* input ) ;
 void rotationOfWord( unsigned char* input ) ;
 void expansionKey( unsigned char *originalKey ) ;
@@ -19,14 +19,15 @@ void addRoundKeyForDecryption( unsigned char* state, int roundNum ) ;
 void inverseCyclicShiftRows( unsigned char* state ) ;
 void inverseSubBites( unsigned char* state ) ;
 void inverseMixColumn( unsigned char* state ) ;
-void decryption( unsigned char* cipherText ) ;
+void decryption( unsigned char* Cipher_text ) ;
 void printStateMatrix( unsigned char* state, int numOfVals ) ;
 void printDecryptTxt( unsigned char* text, int len ) ;
 string getEncryptedText( string inpt ) ;
-string getDecryptedText( string en_mess ) ;
+string getDecryptedText( string Cipher_text ) ;
 void write_file(string encrypted);
 string read_file();
 void write_dec_file(string decr,int len);
+void g_funct(unsigned char *prev,int idx);
 
 
 unsigned char roundConstant[10] = { 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36 } ;
@@ -196,8 +197,18 @@ unsigned char TableFor14[256] =
 } ;
 
 
-unsigned char modifiedKey[176] ;      //44*4 = 176
-
+unsigned char ExpandedKey[176] ;      //44*4 = 176
+int main()
+{
+    string inpt, encr ;
+    cout << "Input : " ;
+    getline( cin, inpt );
+    encr = getEncryptedText( inpt ) ;
+    write_file(encr);
+    string decr;
+    decr=read_file();
+    getDecryptedText( decr ) ;
+}
 
 void substitutionWord( unsigned char* input )
 {
@@ -219,23 +230,24 @@ void expansionKey( unsigned char *originalKey )
 {
     int idx ;
     for ( idx = 0; idx <= 15; idx++ ) 
-        modifiedKey[idx] = originalKey[idx] ; 
+        ExpandedKey[idx] = originalKey[idx] ; 
 
     while ( idx <= 175 )
     {
         unsigned char prevWord[4] ;
         for ( int i = 0; i < 4; i++ )
-            prevWord[i] = modifiedKey[idx + i - 4] ; 
+            prevWord[i] = ExpandedKey[idx + i - 4] ; 
 
         if( (idx%16) == 0 )
         {
-            rotationOfWord( prevWord ) ;
-            substitutionWord( prevWord ) ;
-            prevWord[0] ^= roundConstant[ (idx/16) - 1 ] ;
+            g_funct(prevWord,idx);
+            // rotationOfWord( prevWord ) ;
+            // substitutionWord( prevWord ) ;
+            // prevWord[0] ^= roundConstant[ (idx/16) - 1 ] ;
         }
 
         for ( int k = 0; k < 4; k++ )
-            modifiedKey[idx+k] = prevWord[k]^modifiedKey[idx-16+k] ;
+            ExpandedKey[idx+k] = prevWord[k]^ExpandedKey[idx-16+k] ;
         idx += 4 ;
     }
 
@@ -295,7 +307,10 @@ void mixColumn( unsigned char* state )
        if( i%4 == 3 )
             temp[i] = TableFor2[state[i]]^TableFor3[state[i-3]]^state[i-1]^state[i-2] ;
    }
-
+        // s0'= s0.T2 + s1.T3 + s2 + s3
+        // s1'= s0 + s1.T2 + s2.T3 + s3
+        // s2' = s0 + s1 + s2.T2 +s3.T3
+        // s3' = s0.T3 + s1 + s2 + s3.T2
    for ( int i = 0; i < 16; i++ )
         state[i] = temp[i] ;
 }
@@ -303,14 +318,13 @@ void mixColumn( unsigned char* state )
 void addRoundKey( unsigned char* state, int roundNum )
 {
     for ( int i = 0; i < 16; i++ )
-        state[i] ^= modifiedKey[roundNum*16+i] ;
+        state[i] ^= ExpandedKey[roundNum*16+i] ;
 }
 
 
 void encryption( unsigned char* message )
 {
     
-    expansionKey( key ) ;
     addRoundKey( message, 0 ) ;
 
     for ( int i = 1; i <= roundNumber; i++ )
@@ -328,7 +342,7 @@ void encryption( unsigned char* message )
 void addRoundKeyForDecryption( unsigned char* state, int roundNum )
 {
     for ( int i = 0; i < 16; i++ )
-        state[i] ^= modifiedKey[160-roundNum*16+i] ;     //coming from the back side this time.
+        state[i] ^= ExpandedKey[160-roundNum*16+i] ;     //coming from the back side this time.
 }
 
 void inverseCyclicShiftRows( unsigned char* state )
@@ -380,25 +394,26 @@ void inverseMixColumn( unsigned char* state )
        if( i%4 == 3 )
             temp[i] = TableFor14[state[i]]^TableFor11[state[i-3]]^TableFor13[state[i-2]]^TableFor9[state[i-1]] ;
     }
-
+        // s0' = s0.T14 + s1.T11 + s2.T13 + s3.T9
+        // s1' = s1.T14 + s2.T11 + s3.T13 + s0.T9
+        // s2' = s2.T14 + s3.T11 + s0.T13 +s1.T9
+        // s3' = s3.T14 + s0.T11 + s1.T13 + s2.T9
     for ( int i = 0; i < 16; i++ )
         state[i] = temp[i] ;
 }
 
-void decryption( unsigned char* cipherText )
+void decryption( unsigned char* Cipher_text )
 {
-    expansionKey( key ) ;
-    addRoundKeyForDecryption( cipherText, 0 ) ;
-
+    addRoundKeyForDecryption( Cipher_text, 0 ) ;
     for ( int i = 1; i <= roundNumber; i++ )
     {
-        inverseCyclicShiftRows( cipherText ) ;
-        inverseSubBites( cipherText ) ;
+        inverseCyclicShiftRows( Cipher_text ) ;
+        inverseSubBites( Cipher_text ) ;
 
-        addRoundKeyForDecryption( cipherText, i );
+        addRoundKeyForDecryption( Cipher_text, i );
 
         if( i != roundNumber )
-            inverseMixColumn( cipherText ) ;
+            inverseMixColumn( Cipher_text ) ;
     }
 
 }
@@ -416,12 +431,12 @@ void printDecryptTxt( unsigned char* text, int len )
     for ( int i = 0; i < len-1; i++ )
     {
         //printf("%c", text[i] ) ;
-        mess[i] = text[i] ;
+        Cipher_text[i] = text[i] ;
         if( text[i+1]==paddingCharacter && text[i+2]==paddingCharacter )
         {
             text[i+1] = '\0';
-            mess[i+1] = '\0';
-            mess.resize(i+1) ;
+            Cipher_text[i+1] = '\0';
+            Cipher_text.resize(i+1) ;
             break ;
         }
     }
@@ -443,25 +458,18 @@ void printEncrypt( unsigned char* text, int len )
 
 string getEncryptedText( string inpt )
 {
-    int len = inpt.length() ;
-
-    char inputText[len] ;
-    for( int i=0; i<len; i++) inputText[i] = inpt[i] ;  
+    int txtLen = inpt.length() ;
+    char inputText[txtLen] ;
+     unsigned char temp[16] ;
     
-    
-    //expansionKey( key ) ;
-
-    int txtLen = sizeof( inputText ) ;
-    // int extendedLen ;
+    for( int i=0; i<txtLen; i++) inputText[i] = inpt[i] ;  
 
     if( (txtLen%16) != 0 )
         extendedLen = txtLen + ( 16 - (txtLen%16) ) ;
     else 
         extendedLen = txtLen ;
-
-    //padding the extra bytes
-
-    unsigned char encryptedTxt[extendedLen+1], man[extendedLen+1] ;
+    Cipher_text.resize(extendedLen+1);
+    unsigned char encryptedTxt[extendedLen+1];
 
 	for( int i=0; i<extendedLen; i++ )
     {
@@ -469,14 +477,13 @@ string getEncryptedText( string inpt )
             encryptedTxt[i] = inputText[i] ;
   	    else
             encryptedTxt[i] = paddingCharacter ;
-        if( i+1 == extendedLen )
-            encryptedTxt[i+1] = '\0';
+     
     }
-
-
+  
+    encryptedTxt[extendedLen] = '\0';
+    expansionKey( key ) ;
     for( int i=0; i<extendedLen; i+=16 )
     {
-        unsigned char temp[16] ;
 		for( int j=0; j<16; j++ ) 
             temp[j] = encryptedTxt[i+j] ;
 		encryption( temp ) ;
@@ -484,32 +491,23 @@ string getEncryptedText( string inpt )
             encryptedTxt [i+j] = temp[j] ;
 	}
 
-    //cout << sizeof(encryptedTxt) << endl ;
-    mess.resize(extendedLen+1);
+    
 
     for ( int i = 0; i <= extendedLen; i++)
     {
-        mess[i] = encryptedTxt[i] ;
-        man[i] = mess[i] ;
+        Cipher_text[i] = encryptedTxt[i] ;
     }
 
-    // cout << "Cipher Text: - " ;
-    // printStateMatrix( man, sizeof(encryptedTxt) ) ;
-    // cout << endl ;
-    // printEncrypt( man, extendedLen ) ;
-    // cout << endl ;
-
-    return mess ;
+    return Cipher_text ;
 }
 
-string getDecryptedText( string en_mess )
+string getDecryptedText( string Cipher_text )
 {
     unsigned char man[extendedLen+1] ;
     for ( int i = 0; i <= extendedLen; i++)
     {
-        man[i] = en_mess[i] ;
+        man[i] = Cipher_text[i] ;
     }
-    //cout << en_mess << endl ;
     unsigned char decryptedTxt[extendedLen+1] ;
 
     for ( int i = 0; i < extendedLen; i += 16 )
@@ -525,8 +523,8 @@ string getDecryptedText( string en_mess )
         if( i+16 == extendedLen )
             decryptedTxt[i+16] = '\0' ;
     }
-   string decr;
-   decr.resize(extendedLen+1);
+        string decr;
+        decr.resize(extendedLen+1);
     for(int i=0;i<extendedLen;i++){
       decr[i]=decryptedTxt[i];
       if( decryptedTxt[i+1]==paddingCharacter && decryptedTxt[i+2]==paddingCharacter )
@@ -537,11 +535,7 @@ string getDecryptedText( string en_mess )
             break ;
         }
     }
-   //  decr[extendedLen]='\0';
-    //cout << "Decrypted Text:- " ;
-   
-    //cout << endl ;
-    return mess ;
+    return Cipher_text ;
 }
 void write_file(string encrypted){
    unsigned char msg[extendedLen];
@@ -592,14 +586,8 @@ void write_dec_file(string decr,int len){
    fclose(fp);
    cout<<endl;
 }
-int main()
-{
-    string inpt, encr ;
-    cout << "Input : " ;
-    getline( cin, inpt );
-    encr = getEncryptedText( inpt ) ;
-    write_file(encr);
-    string decr;
-    decr=read_file();
-    getDecryptedText( decr ) ;
+void g_funct(unsigned char *prevWord,int idx){
+             rotationOfWord( prevWord ) ;
+            substitutionWord( prevWord ) ;
+            prevWord[0] ^= roundConstant[ (idx/16) - 1 ] ;
 }
