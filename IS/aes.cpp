@@ -554,28 +554,26 @@ string read_file(){
     string encr;
     encr.resize(extendedLen+1);
     int i;
-   unsigned char encrypted[extendedLen];
-   fp=fopen("encrypted_text.txt","r+");
-    for( i=0;i<extendedLen;i++){
-      char character1, character2;
-      fscanf(fp,"%c%c",&character1,&character2);
-    unsigned int concatenated_value;
+    unsigned char encrypted[extendedLen];
+    fp=fopen("encrypted_text.txt","r+");
+    for( i=0;i<extendedLen;i++)
+    {
+        char character1, character2;
+        fscanf(fp,"%c%c",&character1,&character2);
+        unsigned int concatenated_value;
    
-    // Convert characters to their respective hexadecimal values
-    int digit1 = (character1 >= 'A' && character1 <= 'F') ? character1 - 'A' + 10 : character1 - '0';
-    int digit2 = (character2 >= 'A' && character2 <= 'F') ? character2 - 'A' + 10 : character2 - '0';
+        // Convert characters to their respective hexadecimal values
+        int digit1 = (character1 >= 'A' && character1 <= 'F') ? character1 - 'A' + 10 : character1 - '0';
+        int digit2 = (character2 >= 'A' && character2 <= 'F') ? character2 - 'A' + 10 : character2 - '0';
 
-    // Combine the hexadecimal digits
-    concatenated_value = ((unsigned int)digit1 << 4) | (unsigned int)digit2;
-    encrypted[i]=concatenated_value;
+        // Combine the hexadecimal digits
+        concatenated_value = ((unsigned int)digit1 << 4) | (unsigned int)digit2;
+        encrypted[i]=concatenated_value;
     }
-  fclose(fp);
-    for( i=0;i<extendedLen;i++){
-      encr[i]=encrypted[i];
-    }
-   encr[i]='\0';
-   return encr;
-
+    fclose(fp);
+    for( i=0;i<extendedLen;i++)encr[i]=encrypted[i];
+    encr[i]='\0';
+    return encr;
 }
 void write_dec_file(string decr,int len){
    FILE *fp;
