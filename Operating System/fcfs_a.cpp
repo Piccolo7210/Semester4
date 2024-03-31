@@ -20,6 +20,7 @@ void gantt_chart(vector <track>tracks);
 void time_calc(vector<track> tracks,vector<process> &processes);
 int main(){
     int n,i;
+    
     vector<process> processes;
     vector<track> tracks;
     read_input(processes,n);
