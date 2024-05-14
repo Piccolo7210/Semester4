@@ -88,7 +88,6 @@ string gethex(string bin)
 	if (bin == "1111")
 		return "f";
 }
-
 string decimaltohex(int64 deci)
 {
 	
