@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+echo "write the directory name-?"
+while : ; do
+read directory
+if [ -d $directory ];then
+	echo "Directory is found!"
+	break
+else echo "Not a directory"
+fi
+done
+cd "$directory"
+for files in *.c *.cpp *.txt; do
+	size=$(du -h "$files" | awk '{print $1}')
+	loc=$(wc -l < "$files")
+	echo "File - $files Size - $size LOC - $loc"
+done
+
+
